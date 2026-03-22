@@ -1,0 +1,50 @@
+# Perl
+blib/
+.build/
+_build/
+cover_db/
+inc/
+Build
+Build.bat
+.last_cover_stats
+Makefile
+Makefile.old
+MANIFEST.bak
+META.yml
+META.json
+MYMETA.yml
+MYMETA.json
+nytprof.out
+pm_to_blib
+*.o
+*.bs
+*.swp
+*~
+
+# Carton
+local/
+.carton/
+
+# cpanm
+.cpanm/
+
+# Logs
+*.log
+nohup.out
+
+# Editor backups
+*~
+*.bak
+.*.sw?
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+cover_db/
