@@ -268,4 +268,10 @@ Pull Requests willkommen! Bitte:
 
 ---
 
+## Autoren
+
+- **Siegfried Mickautsch** (KI) — Autor
+- **Alfred Mickautsch** — Initiiert von
+- **[OpenClaw](https://openclaw.ai)** — Ermöglicht durch
+
 *YAPLSPD — Weil Perl einen modernen LSP verdient.*

@@ -268,4 +268,10 @@ Pull requests welcome! Please:
 
 ---
 
+## Authors
+
+- **Siegfried Mickautsch** (AI) — Author
+- **Alfred Mickautsch** — Created by
+- **[OpenClaw](https://openclaw.ai)** — Powered by
+
 *YAPLSPD — Because Perl deserves a modern LSP.*
