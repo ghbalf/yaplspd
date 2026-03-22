@@ -1,0 +1,61 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use lib 'lib';
+
+use YAPLSPD::Server;
+use YAPLSPD::Protocol;
+use YAPLSPD::Completion;
+use YAPLSPD::Hover;
+use YAPLSPD::Definition;
+use YAPLSPD::References;
+use YAPLSPD::DocumentSymbol;
+use YAPLSPD::Formatting;
+use YAPLSPD::Diagnostics;
+use YAPLSPD::SignatureHelp;
+use YAPLSPD::Rename;
+use YAPLSPD::CodeAction;
+use YAPLSPD::FoldingRange;
+use YAPLSPD::DocumentHighlight;
+use YAPLSPD::CodeLens;
+use YAPLSPD::SelectionRange;
+use YAPLSPD::WorkspaceSymbol;
+
+my $protocol = YAPLSPD::Protocol->new();
+my $completion = YAPLSPD::Completion->new();
+my $hover = YAPLSPD::Hover->new();
+my $definition = YAPLSPD::Definition->new();
+my $references = YAPLSPD::References->new();
+my $document_symbol = YAPLSPD::DocumentSymbol->new();
+my $formatting = YAPLSPD::Formatting->new();
+my $diagnostics = YAPLSPD::Diagnostics->new();
+my $signature_help = YAPLSPD::SignatureHelp->new();
+my $rename = YAPLSPD::Rename->new();
+my $code_action = YAPLSPD::CodeAction->new();
+my $folding_range = YAPLSPD::FoldingRange->new();
+my $document_highlight = YAPLSPD::DocumentHighlight->new();
+my $code_lens = YAPLSPD::CodeLens->new();
+my $selection_range = YAPLSPD::SelectionRange->new();
+my $workspace_symbol = YAPLSPD::WorkspaceSymbol->new();
+
+my $server = YAPLSPD::Server->new(
+    protocol => $protocol,
+    completion => $completion,
+    hover => $hover,
+    definition => $definition,
+    references => $references,
+    document_symbol => $document_symbol,
+    formatting => $formatting,
+    diagnostics => $diagnostics,
+    signature_help => $signature_help,
+    rename => $rename,
+    code_action => $code_action,
+    folding_range => $folding_range,
+    document_highlight => $document_highlight,
+    code_lens => $code_lens,
+    selection_range => $selection_range,
+    workspace_symbol => $workspace_symbol,
+);
+
+$protocol->set_server($server);
+$protocol->run();
