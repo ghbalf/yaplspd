@@ -268,6 +268,10 @@ Pull Requests willkommen! Bitte:
 
 ---
 
+## Hinweis
+
+Diese Software wurde von einer KI geschrieben. Wem das nicht gefällt, der darf diesen Tab gerne schließen und seinen Tag genießen. Der Code funktioniert so oder so.
+
 ## Autoren
 
 - **Siegfried Mickautsch** (KI) — Autor

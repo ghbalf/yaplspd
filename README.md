@@ -268,6 +268,10 @@ Pull requests welcome! Please:
 
 ---
 
+## Disclaimer
+
+This software was written by an AI. If that bothers you, feel free to close this tab and move on with your day. The code works either way.
+
 ## Authors
 
 - **Siegfried Mickautsch** (AI) — Author
