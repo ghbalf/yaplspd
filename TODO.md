@@ -13,7 +13,7 @@
 - [x] README.md erstellen
 - [x] README_DE.md (Deutsche Version)
 - [x] LICENSE (MIT)
-- [x] GitHub Release v0.6.0 erstellt (Tag existiert auf remote)
+- [x] GitHub Release v0.7.0 erstellt (Tag existiert auf remote)
 
 ## Phase 7 - Erweiterte Features (Current)
 - [x] E2E Integration Tests - 12 Subtests implementiert, alle bestehen
@@ -56,7 +56,7 @@
   - Environment Variablen: `YAPLSPD_MAX_DOCUMENTS`, `YAPLSPD_MAX_MEMORY_MB`, `YAPLSPD_PPI_TIMEOUT`, `YAPLSPD_GC_INTERVAL`
 
 ## Probleme
-- [GELÖST] GitHub Tag v0.6.0 existiert auf remote (lokal war nicht gepullt)
+- [GELÖST] GitHub Tag v0.7.0 existiert auf remote
 - [INFO] 293 Tests vorhanden, alle passen (+49 MemoryManager Tests)
 
 ## Notizen
@@ -67,7 +67,7 @@
 - Pure Perl Implementierung (keine XS-Abhängigkeiten)
 - Vergleich mit Perl::LS, PLS, Navigator in README dokumentiert
 - Editor-Setup für Neovim, VS Code, Emacs dokumentiert
-- Tag v0.6.0 verifiziert: existiert auf GitHub remote
+- Tag v0.7.0 verifiziert: existiert auf GitHub remote
 - **E2E Integration Tests (2026-03-28):**
   - 12 Subtests in `t/e2e_integration.t`
   - Abdeckung: Initialize, Document Lifecycle, Completion, Hover, Definition, References, Document Symbol, Formatting, Signature Help, Full Workflow, Error Handling, Multi-Document
@@ -127,7 +127,7 @@
   - 293 Tests total (alle passing)
 - **Projektabschluss (2026-03-28):**
   - Alle 22 LSP-Features vollständig implementiert und getestet
-  - Release v0.6.0 getaggt und verifiziert
+  - Release v0.7.0 getaggt und verifiziert
   - 293 Unit-Tests, alle passing (100% Erfolgsrate)
   - Memory-Optimierung für lange Sessions abgeschlossen
   - Parallel Parsing für große Workspaces implementiert

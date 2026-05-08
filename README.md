@@ -233,7 +233,7 @@ lib/YAPLSPD/
 - [x] Parallel parsing for larger workspaces
 - [x] Memory management for long-running sessions
 - [x] README + README_DE + MIT license
-- [x] GitHub release `v0.6.0`
+- [x] GitHub release `v0.7.0`
 - [x] 293 tests passing
 
 ### Current Notes
