@@ -5,9 +5,15 @@ use JSON::PP;
 
 sub new {
     my ($class, %args) = @_;
+    
+    # Initialize memory manager for long session optimization
+    require YAPLSPD::MemoryManager;
+    my $memory_manager = YAPLSPD::MemoryManager->new();
+    
     my $self = bless {
         protocol => $args{protocol},
         documents => {},
+        memory_manager => $memory_manager,
         completion => $args{completion},
         hover => $args{hover},
         definition => $args{definition},
@@ -23,6 +29,9 @@ sub new {
         code_lens => $args{code_lens},
         selection_range => $args{selection_range},
         workspace_symbol => $args{workspace_symbol},
+        call_hierarchy => $args{call_hierarchy},
+        type_hierarchy => $args{type_hierarchy},
+        semantic_tokens => $args{semantic_tokens},
     }, $class;
     return $self;
 }
@@ -98,6 +107,30 @@ sub handle_message {
     elsif ($method eq 'workspace/didChangeWatchedFiles') {
         $self->_handle_did_change_watched_files($message);
     }
+    elsif ($method eq 'textDocument/prepareCallHierarchy') {
+        $self->_handle_prepare_call_hierarchy($message);
+    }
+    elsif ($method eq 'callHierarchy/incomingCalls') {
+        $self->_handle_incoming_calls($message);
+    }
+    elsif ($method eq 'callHierarchy/outgoingCalls') {
+        $self->_handle_outgoing_calls($message);
+    }
+    elsif ($method eq 'textDocument/prepareTypeHierarchy') {
+        $self->_handle_prepare_type_hierarchy($message);
+    }
+    elsif ($method eq 'typeHierarchy/supertypes') {
+        $self->_handle_supertypes($message);
+    }
+    elsif ($method eq 'typeHierarchy/subtypes') {
+        $self->_handle_subtypes($message);
+    }
+    elsif ($method eq 'textDocument/semanticTokens/full') {
+        $self->_handle_semantic_tokens_full($message);
+    }
+    elsif ($method eq 'textDocument/semanticTokens/range') {
+        $self->_handle_semantic_tokens_range($message);
+    }
     elsif ($method eq 'shutdown') {
         $self->_handle_shutdown($message);
     }
@@ -142,6 +175,16 @@ sub _handle_initialize {
                     interFileDependencies => JSON::PP::false,
                     workspaceDiagnostics => JSON::PP::false,
                 },
+                callHierarchyProvider => JSON::PP::true,
+                typeHierarchyProvider => JSON::PP::true,
+                semanticTokensProvider => {
+                    legend => {
+                        tokenTypes => \@YAPLSPD::SemanticTokens::TOKEN_TYPES,
+                        tokenModifiers => \@YAPLSPD::SemanticTokens::TOKEN_MODIFIERS,
+                    },
+                    full => JSON::PP::true,
+                    range => JSON::PP::true,
+                },
             },
         },
     };
@@ -152,7 +195,20 @@ sub _handle_initialize {
 sub _handle_did_close {
     my ($self, $message) = @_;
     my $uri = $message->{params}{textDocument}{uri};
+    $self->{memory_manager}->remove_document($uri);
     delete $self->{documents}{$uri};
+}
+
+# Get document with memory management
+sub _get_document {
+    my ($self, $uri) = @_;
+    
+    # Try memory manager first
+    my $doc = $self->{memory_manager}->get_document($uri);
+    return $doc if $doc;
+    
+    # Fallback to direct hash (backward compatibility)
+    return $self->{documents}{$uri};
 }
 
 sub _handle_completion {
@@ -160,7 +216,7 @@ sub _handle_completion {
     my $uri = $message->{params}{textDocument}{uri};
     my $position = $message->{params}{position};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $completions = $self->{completion}->complete($doc, $position);
 
     my $response = {
@@ -177,7 +233,7 @@ sub _handle_hover {
     my $uri = $message->{params}{textDocument}{uri};
     my $position = $message->{params}{position};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $hover_info = $self->{hover}->get_hover_info($doc, $position);
 
     my $response = {
@@ -194,7 +250,7 @@ sub _handle_definition {
     my $uri = $message->{params}{textDocument}{uri};
     my $position = $message->{params}{position};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $definition = $self->{definition}->find_definition($doc, $position);
 
     my $response = {
@@ -212,7 +268,7 @@ sub _handle_references {
     my $position = $message->{params}{position};
     my $context = $message->{params}{context} || {};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $references = $self->{references}->find_references($doc, $position);
 
     # Update URI for each reference
@@ -233,7 +289,7 @@ sub _handle_document_symbol {
     my ($self, $message) = @_;
     my $uri = $message->{params}{textDocument}{uri};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $symbols = $self->{document_symbol}->get_document_symbols($doc);
 
     my $response = {
@@ -250,7 +306,7 @@ sub _handle_formatting {
     my $uri = $message->{params}{textDocument}{uri};
     my $options = $message->{params}{options} || {};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $edits = $self->{formatting}->format_document($doc);
 
     my $response = {
@@ -268,7 +324,7 @@ sub _handle_range_formatting {
     my $range = $message->{params}{range};
     my $options = $message->{params}{options} || {};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $edits = $self->{formatting}->format_range($doc, $range);
 
     my $response = {
@@ -283,7 +339,7 @@ sub _handle_range_formatting {
 sub _publish_diagnostics {
     my ($self, $uri) = @_; 
     
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $diagnostics = $self->{diagnostics}->analyze_document($doc);
 
     my $notification = {
@@ -305,11 +361,15 @@ sub _handle_did_open {
     my $version = $message->{params}{textDocument}{version} || 1;
     
     require YAPLSPD::Document;
-    $self->{documents}{$uri} = YAPLSPD::Document->new(
+    my $doc = YAPLSPD::Document->new(
         uri => $uri,
         text => $text,
         version => $version
     );
+    
+    # Store in both legacy hash and memory manager
+    $self->{documents}{$uri} = $doc;
+    $self->{memory_manager}->store_document($uri, $doc);
     
     # Publish diagnostics on open
     $self->_publish_diagnostics($uri);
@@ -321,9 +381,13 @@ sub _handle_did_change {
     my $changes = $message->{params}{contentChanges};
     my $version = $message->{params}{textDocument}{version};
 
-    if (my $doc = $self->{documents}{$uri}) {
+    my $doc = $self->_get_document($uri);
+    if ($doc) {
         $doc->apply_changes($changes);
         $doc->version($version) if defined $version;
+        
+        # Track access via memory manager
+        $self->{memory_manager}->get_document($uri);
         
         # Publish diagnostics on change
         $self->_publish_diagnostics($uri);
@@ -334,6 +398,9 @@ sub _handle_did_save {
     my ($self, $message) = @_;
     my $uri = $message->{params}{textDocument}{uri};
     
+    # Track access via memory manager
+    $self->{memory_manager}->get_document($uri);
+    
     # Publish diagnostics on save
     $self->_publish_diagnostics($uri);
 }
@@ -343,7 +410,7 @@ sub _handle_signature_help {
     my $uri = $message->{params}{textDocument}{uri};
     my $position = $message->{params}{position};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $signature_help = $self->{signature_help}->get_signature_help($doc, $position);
 
     my $response = {
@@ -361,7 +428,7 @@ sub _handle_rename {
     my $position = $message->{params}{position};
     my $new_name = $message->{params}{newName};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $workspace_edit = $self->{rename}->rename($doc, $position, $new_name);
 
     my $response = {
@@ -379,7 +446,7 @@ sub _handle_code_action {
     my $range = $message->{params}{range};
     my $context = $message->{params}{context} || {};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $actions = $self->{code_action}->get_code_actions($doc, $range, $context);
 
     my $response = {
@@ -395,7 +462,7 @@ sub _handle_folding_range {
     my ($self, $message) = @_;
     my $uri = $message->{params}{textDocument}{uri};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $ranges = $self->{folding_range}->get_folding_ranges($doc);
 
     my $response = {
@@ -412,7 +479,7 @@ sub _handle_document_highlight {
     my $uri = $message->{params}{textDocument}{uri};
     my $position = $message->{params}{position};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $highlights = $self->{document_highlight}->get_highlights($doc, $position);
 
     my $response = {
@@ -428,7 +495,7 @@ sub _handle_code_lens {
     my ($self, $message) = @_;
     my $uri = $message->{params}{textDocument}{uri};
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $lenses = $self->{code_lens}->get_code_lenses($doc);
 
     my $response = {
@@ -445,7 +512,7 @@ sub _handle_selection_range {
     my $uri = $message->{params}{textDocument}{uri};
     my $positions = $message->{params}{positions} || [];
 
-    my $doc = $self->{documents}{$uri} or return;
+    my $doc = $self->_get_document($uri) or return;
     my $ranges = $self->{selection_range}->get_selection_ranges($doc, $positions);
 
     my $response = {
@@ -506,6 +573,189 @@ sub _handle_shutdown {
         result => undef,
     };
     
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_prepare_call_hierarchy {
+    my ($self, $message) = @_;
+    my $uri = $message->{params}{textDocument}{uri};
+    my $position = $message->{params}{position};
+
+    my $doc = $self->_get_document($uri) or return;
+    my $items = $self->{call_hierarchy}->prepare_call_hierarchy($doc, $position);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $items,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_incoming_calls {
+    my ($self, $message) = @_;
+    my $item = $message->{params}{item};
+
+    # Find the document for this item
+    my $uri = $item->{uri};
+    my $doc = $self->{documents}{$uri};
+    
+    if (!$doc) {
+        my $response = {
+            jsonrpc => '2.0',
+            id => $message->{id},
+            result => [],
+        };
+        $self->{protocol}->send_message($response);
+        return;
+    }
+    
+    my $calls = $self->{call_hierarchy}->incoming_calls($doc, $item);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $calls,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_outgoing_calls {
+    my ($self, $message) = @_;
+    my $item = $message->{params}{item};
+
+    # Find the document for this item
+    my $uri = $item->{uri};
+    my $doc = $self->{documents}{$uri};
+    
+    if (!$doc) {
+        my $response = {
+            jsonrpc => '2.0',
+            id => $message->{id},
+            result => [],
+        };
+        $self->{protocol}->send_message($response);
+        return;
+    }
+    
+    my $calls = $self->{call_hierarchy}->outgoing_calls($doc, $item);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $calls,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_prepare_type_hierarchy {
+    my ($self, $message) = @_;
+    my $uri = $message->{params}{textDocument}{uri};
+    my $position = $message->{params}{position};
+
+    my $doc = $self->_get_document($uri) or return;
+    my $items = $self->{type_hierarchy}->prepare_type_hierarchy($doc, $position);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $items,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_supertypes {
+    my ($self, $message) = @_;
+    my $item = $message->{params}{item};
+
+    # Find the document for this item
+    my $uri = $item->{uri};
+    my $doc = $self->{documents}{$uri};
+    
+    if (!$doc) {
+        my $response = {
+            jsonrpc => '2.0',
+            id => $message->{id},
+            result => [],
+        };
+        $self->{protocol}->send_message($response);
+        return;
+    }
+    
+    my $types = $self->{type_hierarchy}->supertypes($doc, $item);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $types,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_subtypes {
+    my ($self, $message) = @_;
+    my $item = $message->{params}{item};
+
+    # Find the document for this item
+    my $uri = $item->{uri};
+    my $doc = $self->{documents}{$uri};
+    
+    if (!$doc) {
+        my $response = {
+            jsonrpc => '2.0',
+            id => $message->{id},
+            result => [],
+        };
+        $self->{protocol}->send_message($response);
+        return;
+    }
+    
+    my $types = $self->{type_hierarchy}->subtypes($doc, $item);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $types,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_semantic_tokens_full {
+    my ($self, $message) = @_;
+    my $uri = $message->{params}{textDocument}{uri};
+
+    my $doc = $self->_get_document($uri) or return;
+    my $tokens = $self->{semantic_tokens}->get_semantic_tokens_full($doc);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $tokens,
+    };
+
+    $self->{protocol}->send_message($response);
+}
+
+sub _handle_semantic_tokens_range {
+    my ($self, $message) = @_;
+    my $uri = $message->{params}{textDocument}{uri};
+    my $range = $message->{params}{range};
+
+    my $doc = $self->_get_document($uri) or return;
+    my $tokens = $self->{semantic_tokens}->get_semantic_tokens_range($doc, $range);
+
+    my $response = {
+        jsonrpc => '2.0',
+        id => $message->{id},
+        result => $tokens,
+    };
+
     $self->{protocol}->send_message($response);
 }
 

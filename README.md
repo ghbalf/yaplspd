@@ -6,7 +6,7 @@ A complete Perl Language Server Protocol (LSP) daemon written in pure Perl.
 
 ## Features
 
-### Implemented LSP Features (19)
+### Implemented LSP Features (22)
 
 | Feature | Method | Status |
 |---------|--------|--------|
@@ -29,6 +29,9 @@ A complete Perl Language Server Protocol (LSP) daemon written in pure Perl.
 | **File Watching** | `workspace/didChangeWatchedFiles` | ✅ |
 | **Document Sync** | `textDocument/didOpen/didChange/didClose` | ✅ |
 | **Diagnostics** | `textDocument/publishDiagnostics` | ✅ |
+| **Call Hierarchy** | `textDocument/prepareCallHierarchy`, `callHierarchy/*` | ✅ |
+| **Type Hierarchy** | `textDocument/prepareTypeHierarchy`, `typeHierarchy/*` | ✅ |
+| **Semantic Tokens** | `textDocument/semanticTokens/full`, `textDocument/semanticTokens/range` | ✅ |
 
 ### YAPLSPD vs. Competition
 
@@ -50,6 +53,9 @@ A complete Perl Language Server Protocol (LSP) daemon written in pure Perl.
 | selectionRange | ✅ | ❌ | ❌ | ✅ |
 | workspace/symbol | ✅ | ✅ | ✅ | ✅ |
 | workspace/configuration | ✅ | ✅ | ✅ | ✅ |
+| callHierarchy | ✅ | ❌ | ❌ | ⚠️ |
+| typeHierarchy | ✅ | ❌ | ❌ | ⚠️ |
+| semanticTokens | ✅ | ❌ | ❌ | ✅ |
 | **Pure Perl** | ✅ | ⚠️ (XS) | ✅ | ❌ (Node.js) |
 
 ## Installation
@@ -170,10 +176,10 @@ PERL_YAPLSPD_LOG=1 ./bin/yaplspd 2>/tmp/yaplspd.log
 
 ```bash
 # All tests
-prove -l
+prove -lr t
 
 # With verbose output
-prove -lv
+prove -lvr t
 
 # Single test file
 prove -l t/completion.t
@@ -190,47 +196,50 @@ perltidy lib/**/*.pm
 
 ```
 lib/YAPLSPD/
-├── Server.pm           # Main server (LSP protocol)
-├── Protocol.pm         # LSP protocol handler
-├── Document.pm         # Document management (PPI)
-├── Completion.pm       # Autocompletion
-├── Hover.pm            # Hover information
-├── Definition.pm       # Go-to-definition
-├── References.pm       # Find-all-references
-├── DocumentSymbol.pm   # Document symbols (outline)
-├── Formatting.pm       # Code formatting (Perl::Tidy)
-├── Diagnostics.pm      # Syntax diagnostics
-├── SignatureHelp.pm    # Function signatures
-├── Rename.pm           # Symbol renaming
-├── CodeAction.pm       # Quick-fixes & refactorings
-├── FoldingRange.pm     # Code folding
+├── Server.pm            # Main server (LSP protocol)
+├── Protocol.pm          # LSP protocol handler
+├── Document.pm          # Document management (PPI)
+├── Completion.pm        # Autocompletion
+├── Hover.pm             # Hover information
+├── Definition.pm        # Go-to-definition
+├── References.pm        # Find-all-references
+├── DocumentSymbol.pm    # Document symbols (outline)
+├── Formatting.pm        # Code formatting (Perl::Tidy)
+├── Diagnostics.pm       # Syntax diagnostics
+├── SignatureHelp.pm     # Function signatures
+├── Rename.pm            # Symbol renaming
+├── CodeAction.pm        # Quick-fixes & refactorings
+├── FoldingRange.pm      # Code folding
 ├── DocumentHighlight.pm # Symbol highlighting
-├── CodeLens.pm         # Code lenses (references, tests)
-├── SelectionRange.pm   # Smart selection
-└── WorkspaceSymbol.pm  # Workspace-wide symbol search
+├── CodeLens.pm          # Code lenses (references, tests)
+├── SelectionRange.pm    # Smart selection
+├── WorkspaceSymbol.pm   # Workspace-wide symbol search
+├── CallHierarchy.pm     # Incoming/outgoing call analysis
+├── TypeHierarchy.pm     # Super-/subtype analysis
+├── SemanticTokens.pm    # Semantic highlighting tokens
+├── ParallelParsing.pm   # Workspace parsing for larger projects
+└── MemoryManager.pm     # LRU-based document memory management
 ```
 
-## Roadmap
+## Project Status
 
-### Completed (Phase 1-5)
-- [x] Basic LSP protocol
-- [x] textDocument/* features (Completion, Hover, Definition, References)
-- [x] Document synchronization
-- [x] Diagnostics & formatting
-- [x] Advanced features (Signature Help, Rename, Code Actions)
-- [x] Workspace features (Symbols, Configuration)
-- [x] 155+ tests
+### Completed
+- [x] Core LSP protocol
+- [x] 22 LSP features implemented
+- [x] E2E integration tests
+- [x] Call hierarchy
+- [x] Type hierarchy
+- [x] Semantic tokens
+- [x] Parallel parsing for larger workspaces
+- [x] Memory management for long-running sessions
+- [x] README + README_DE + MIT license
+- [x] GitHub release `v0.6.0`
+- [x] 293 tests passing
 
-### Phase 6 (Current)
-- [ ] README.md & documentation
-- [ ] LICENSE (MIT)
-- [ ] GitHub release
-
-### Phase 7 (Planned)
-- [ ] E2E integration tests
-- [ ] Call hierarchy
-- [ ] Type hierarchy
-- [ ] Semantic tokens
+### Current Notes
+- Pure Perl implementation (no XS requirement for core functionality)
+- Optional PPI-backed parsing with regex fallback paths for resilience
+- Some test runs emit warnings in older modules, but the full suite currently passes
 
 ## Troubleshooting
 
@@ -264,7 +273,7 @@ MIT License — See [LICENSE](LICENSE)
 Pull requests welcome! Please:
 1. Write tests for new features
 2. Run `perltidy` before committing
-3. Ensure existing tests pass: `prove -l`
+3. Ensure existing tests pass: `prove -lr t`
 
 ---
 

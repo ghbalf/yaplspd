@@ -6,7 +6,7 @@ Ein vollständiger Perl Language Server Protocol (LSP) Daemon in purem Perl.
 
 ## Features
 
-### Implementierte LSP-Features (19)
+### Implementierte LSP-Features (22)
 
 | Feature | Methode | Status |
 |---------|---------|--------|
@@ -29,6 +29,9 @@ Ein vollständiger Perl Language Server Protocol (LSP) Daemon in purem Perl.
 | **Datei-Überwachung** | `workspace/didChangeWatchedFiles` | ✅ |
 | **Dokument-Sync** | `textDocument/didOpen/didChange/didClose` | ✅ |
 | **Diagnostik** | `textDocument/publishDiagnostics` | ✅ |
+| **Call Hierarchy** | `textDocument/prepareCallHierarchy`, `callHierarchy/*` | ✅ |
+| **Type Hierarchy** | `textDocument/prepareTypeHierarchy`, `typeHierarchy/*` | ✅ |
+| **Semantic Tokens** | `textDocument/semanticTokens/full`, `textDocument/semanticTokens/range` | ✅ |
 
 ### YAPLSPD vs. Konkurrenz
 
@@ -50,6 +53,9 @@ Ein vollständiger Perl Language Server Protocol (LSP) Daemon in purem Perl.
 | selectionRange | ✅ | ❌ | ❌ | ✅ |
 | workspace/symbol | ✅ | ✅ | ✅ | ✅ |
 | workspace/configuration | ✅ | ✅ | ✅ | ✅ |
+| callHierarchy | ✅ | ❌ | ❌ | ⚠️ |
+| typeHierarchy | ✅ | ❌ | ❌ | ⚠️ |
+| semanticTokens | ✅ | ❌ | ❌ | ✅ |
 | **Pure Perl** | ✅ | ⚠️ (XS) | ✅ | ❌ (Node.js) |
 
 ## Installation
@@ -170,10 +176,10 @@ PERL_YAPLSPD_LOG=1 ./bin/yaplspd 2>/tmp/yaplspd.log
 
 ```bash
 # Alle Tests
-prove -l
+prove -lr t
 
 # Mit Verbose-Ausgabe
-prove -lv
+prove -lvr t
 
 # Einzelne Test-Datei
 prove -l t/completion.t
@@ -190,47 +196,50 @@ perltidy lib/**/*.pm
 
 ```
 lib/YAPLSPD/
-├── Server.pm           # Haupt-Server (LSP-Protokoll)
-├── Protocol.pm         # LSP-Protokoll-Handler
-├── Document.pm         # Dokument-Verwaltung (PPI)
-├── Completion.pm       # Autovervollständigung
-├── Hover.pm            # Hover-Informationen
-├── Definition.pm       # Go-to-Definition
-├── References.pm       # Find-All-References
-├── DocumentSymbol.pm   # Dokument-Symbole (Outline)
-├── Formatting.pm       # Code-Formatierung (Perl::Tidy)
-├── Diagnostics.pm      # Syntax-Diagnostik
-├── SignatureHelp.pm    # Funktions-Signaturen
-├── Rename.pm           # Symbol-Umbenennen
-├── CodeAction.pm       # Quick-Fixes & Refactorings
-├── FoldingRange.pm     # Code-Faltung
+├── Server.pm            # Haupt-Server (LSP-Protokoll)
+├── Protocol.pm          # LSP-Protokoll-Handler
+├── Document.pm          # Dokument-Verwaltung (PPI)
+├── Completion.pm        # Autovervollständigung
+├── Hover.pm             # Hover-Informationen
+├── Definition.pm        # Go-to-Definition
+├── References.pm        # Find-All-References
+├── DocumentSymbol.pm    # Dokument-Symbole (Outline)
+├── Formatting.pm        # Code-Formatierung (Perl::Tidy)
+├── Diagnostics.pm       # Syntax-Diagnostik
+├── SignatureHelp.pm     # Funktions-Signaturen
+├── Rename.pm            # Symbol-Umbenennen
+├── CodeAction.pm        # Quick-Fixes & Refactorings
+├── FoldingRange.pm      # Code-Faltung
 ├── DocumentHighlight.pm # Symbol-Highlighting
-├── CodeLens.pm         # Code-Linsen (Referenzen, Tests)
-├── SelectionRange.pm   # Smarte Auswahl
-└── WorkspaceSymbol.pm  # Workspace-weite Symbol-Suche
+├── CodeLens.pm          # Code-Linsen (Referenzen, Tests)
+├── SelectionRange.pm    # Smarte Auswahl
+├── WorkspaceSymbol.pm   # Workspace-weite Symbol-Suche
+├── CallHierarchy.pm     # Eingehende/ausgehende Aufrufanalyse
+├── TypeHierarchy.pm     # Ober-/Untertypen-Analyse
+├── SemanticTokens.pm    # Semantische Highlighting-Tokens
+├── ParallelParsing.pm   # Workspace-Parsing für größere Projekte
+└── MemoryManager.pm     # LRU-basiertes Dokument-Memory-Management
 ```
 
-## Roadmap
+## Projektstatus
 
-### Erledigt (Phase 1-5)
-- [x] Basis-LSP Protokoll
-- [x] textDocument/* Features (Completion, Hover, Definition, References)
-- [x] Dokument-Synchronisation
-- [x] Diagnostik & Formatierung
-- [x] Erweiterte Features (Signature Help, Rename, Code Actions)
-- [x] Workspace Features (Symbols, Configuration)
-- [x] 155+ Tests
+### Erledigt
+- [x] Kern-LSP-Protokoll
+- [x] 22 LSP-Features implementiert
+- [x] E2E-Integrationstests
+- [x] Call Hierarchy
+- [x] Type Hierarchy
+- [x] Semantic Tokens
+- [x] Paralleles Parsing für größere Workspaces
+- [x] Memory-Management für lange Sessions
+- [x] README + README_DE + MIT-Lizenz
+- [x] GitHub-Release `v0.6.0`
+- [x] 293 Tests erfolgreich
 
-### Phase 6 (Aktuell)
-- [ ] README.md & Dokumentation
-- [ ] LICENSE (MIT)
-- [ ] GitHub Release
-
-### Phase 7 (Geplant)
-- [ ] E2E-Integration-Tests
-- [ ] Call Hierarchy
-- [ ] Type Hierarchy
-- [ ] Semantic Tokens
+### Aktuelle Hinweise
+- Pure-Perl-Implementierung (keine XS-Pflicht für die Kernfunktionen)
+- Optionales PPI-basiertes Parsing mit Regex-Fallback für robustes Verhalten
+- Einige ältere Module erzeugen bei Testläufen Warnings, aber die komplette Suite läuft derzeit grün
 
 ## Troubleshooting
 
@@ -264,7 +273,7 @@ MIT License — Siehe [LICENSE](LICENSE)
 Pull Requests willkommen! Bitte:
 1. Tests schreiben für neue Features
 2. `perltidy` vor Commit ausführen
-3. Bestehende Tests müssen passen: `prove -l`
+3. Bestehende Tests müssen passen: `prove -lr t`
 
 ---
 

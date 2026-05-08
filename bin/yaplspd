@@ -20,6 +20,9 @@ use YAPLSPD::DocumentHighlight;
 use YAPLSPD::CodeLens;
 use YAPLSPD::SelectionRange;
 use YAPLSPD::WorkspaceSymbol;
+use YAPLSPD::CallHierarchy;
+use YAPLSPD::TypeHierarchy;
+use YAPLSPD::SemanticTokens;
 
 my $protocol = YAPLSPD::Protocol->new();
 my $completion = YAPLSPD::Completion->new();
@@ -37,6 +40,9 @@ my $document_highlight = YAPLSPD::DocumentHighlight->new();
 my $code_lens = YAPLSPD::CodeLens->new();
 my $selection_range = YAPLSPD::SelectionRange->new();
 my $workspace_symbol = YAPLSPD::WorkspaceSymbol->new();
+my $call_hierarchy = YAPLSPD::CallHierarchy->new();
+my $type_hierarchy = YAPLSPD::TypeHierarchy->new();
+my $semantic_tokens = YAPLSPD::SemanticTokens->new();
 
 my $server = YAPLSPD::Server->new(
     protocol => $protocol,
@@ -55,6 +61,9 @@ my $server = YAPLSPD::Server->new(
     code_lens => $code_lens,
     selection_range => $selection_range,
     workspace_symbol => $workspace_symbol,
+    call_hierarchy => $call_hierarchy,
+    type_hierarchy => $type_hierarchy,
+    semantic_tokens => $semantic_tokens,
 );
 
 $protocol->set_server($server);
